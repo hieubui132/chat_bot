@@ -1,10 +1,20 @@
 FROM node:lts-alpine
-ENV NODE_ENV=production
+# Create app directory
 WORKDIR /usr/src/app
-COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
-RUN npm install --production --silent && mv node_modules ../
+
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+COPY package*.json ./
+
+# Bundle app source
 COPY . .
+
+# Install app dependencies
+RUN npm install
+
+# Creates a "dist" folder with the production build
+RUN npm run build
+
 EXPOSE 3000
-RUN chown -R node /usr/src/app
-USER node
-CMD ["npm", "start"]
+
+# Start the server using the production build
+CMD [ "node", "dist/main.js" ]
