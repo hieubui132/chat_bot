@@ -24,6 +24,9 @@ export class WebHookService {
         // Responds with '403 Forbidden' if verify tokens do not match
         res.sendStatus(403);
       }
+    } else {
+      res.sendStatus(403);
+      console.log(VERIFY_TOKEN);
     }
   }
 
