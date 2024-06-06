@@ -1,11 +1,11 @@
 {
+  "version": "0.2.0",
   "configurations": [
     {
-      "name": "Docker Node.js Launch",
-      "type": "docker",
+      "command": "npm run start:dev",
+      "name": "Run npm start",
       "request": "launch",
-      "preLaunchTask": "docker-run: debug",
-      "platform": "node"
+      "type": "node-terminal"
     }
   ]
 }
