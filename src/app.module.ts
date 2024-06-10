@@ -8,7 +8,7 @@ import configuration from './config/configuration';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JobModule } from './modules/job/job.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { conversation } from './entity';
+import { conversation, employee, subject } from './entity';
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { conversation } from './entity';
       username: 'postgres',
       password: 'Khongbiet098',
       database: 'messenger',
-      entities: [conversation],
+      entities: [conversation, employee, subject],
       synchronize: true,
     }),
   ],

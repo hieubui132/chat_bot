@@ -6,8 +6,9 @@ import { TeleService } from './tele.service';
 export class TeleController {
   constructor(private readonly service: TeleService) {}
   @Post('send_group')
-  sendMesToGroup(@Body() body: post_group) {
-    const res = this.service.sendMesToGroup(body);
+  public async sendMesToGroup(@Body() body: post_group) {
+    const res = await this.service.sendMesToGroup1(body);
+    console.log(res);
     return res;
   }
 }

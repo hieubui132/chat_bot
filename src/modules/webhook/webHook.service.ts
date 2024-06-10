@@ -10,12 +10,12 @@ export class WebHookService {
   // Adds support for GET requests to our webhook
   getWebhook(req: Request, res: Response) {
     // Your verify token. Should be a random string.
-    const VERIFY_TOKEN = 'KMOBwGPzSM';
+    const VERIFY_TOKEN = 'bwN5JURM';
 
     // Parse the query params
-    let mode = req.query['hub.mode'];
-    let token = req.query['hub.verify_token'];
-    let challenge = req.query['hub.challenge'];
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
     // Checks if a token and mode is in the query string of the request
     console.log(mode);
     console.log(token);
