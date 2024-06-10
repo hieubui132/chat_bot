@@ -37,7 +37,6 @@ export class WebHookService {
 
   // Creates the endpoint for your webhook
   postWebhook(req: Request, res: Response) {
-    let body = req.body;
     console.log(req.body);
     res.status(200).send('EVENT_RECEIVED');
     // Checks if this is an event from a page subscription
