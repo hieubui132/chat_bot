@@ -6,9 +6,11 @@ import { tele_url } from 'src/api/url';
 import { InjectRepository } from '@nestjs/typeorm';
 import { employee, subject } from 'src/entity';
 import { Repository } from 'typeorm';
+import { Telegraf } from 'telegraf';
 
 @Injectable()
 export class TeleService {
+  private readonly bot: Telegraf;
   constructor(
     private readonly httpService: HttpService,
     private configService: ConfigService,
@@ -16,7 +18,27 @@ export class TeleService {
     private employees: Repository<employee>,
     @InjectRepository(subject)
     private subjects: Repository<subject>,
-  ) {}
+  ) {
+    const token = this.configService.get<string>('tele_token');
+    this.bot = new Telegraf(token);
+    this.bot.launch({
+      webhook: {
+        // Public domain for webhook; e.g.: example.com
+        domain: webhookDomain,
+
+        // Port to listen on; e.g.: 8080
+        port: port,
+
+        // Optional path to listen for.
+        // `bot.secretPathComponent()` will be used by default
+        path: webhookPath,
+
+        // Optional secret to be sent back in a header for security.
+        // e.g.: `crypto.randomBytes(64).toString("hex")`
+        secretToken: randomAlphaNumericString,
+      },
+    });
+  }
 
   async sendMesToGroup(mes: string) {
     const token = this.configService.get<string>('tele_token');
