@@ -29,8 +29,8 @@ export class TeleController {
   }
 
   @Post()
-  postWebhook(@Req() req: Request, @Res() res: Response): any {
-    console.log(req);
-    res.status(200).send('EVENT_RECEIVED');
+  public async postWebhook(@Req() req: Request, @Res() res: Response) {
+    const result = await this.service.callBackMsg(req.body);
+    res.status(200).send(result);
   }
 }
