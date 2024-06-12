@@ -24,6 +24,9 @@ export class employee {
   @Column('varchar', { length: 500, name: 'tele_id' })
   tele_id: string = '';
 
+  @Column('varchar', { length: 500, name: 'tele_user_name' })
+  tele_user_name: string = '';
+
   @ManyToMany(() => subject, (subject) => subject.employees)
   @JoinTable({
     name: 'employee_subject',

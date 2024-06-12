@@ -30,6 +30,7 @@ export class TeleController {
 
   @Post()
   public async postWebhook(@Req() req: Request, @Res() res: Response) {
+    console.log(req.body);
     const result = await this.service.callBackMsg(req.body);
     res.status(200).send(result);
   }

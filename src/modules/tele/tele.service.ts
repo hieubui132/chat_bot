@@ -65,17 +65,22 @@ export class TeleService {
 
     const tag: string[] = [];
     for (const e of entity.employees) {
-      tag.push('@' + e.tele_id);
+      tag.push(`<a href='tg://user?id=${e.tele_id}'>${e.tele_user_name}</a>`);
     }
     let mesString = '';
+    const group = this.configService.get<string>('tele_group_id');
     if (tag.length > 0) {
       mesString = tag.join(' ');
       mesString += ` Có người cần hỗ trợ môn ${entity.name}, các bạn vui lòng vào page check tin nhắn nhé!`;
-      const res = await this.sendMesToGroup(mesString);
+      const res = await this.bot.telegram.sendMessage(group, mesString, {
+        parse_mode: 'HTML',
+      });
       return res;
     } else {
       mesString = `Có người cần hỗ trợ môn ${entity.name}, ai làm được thì triển nhé!`;
-      const res = await this.sendMesToGroup(mesString);
+      const res = await this.bot.telegram.sendMessage(group, mesString, {
+        parse_mode: 'HTML',
+      });
       return res;
     }
 
@@ -116,11 +121,11 @@ export class TeleService {
     //   return false;
     // }
     const command = stringArr[0];
-    let userId = stringArr[1];
-    if (userId) userId = userId.replace('@', '');
+    let user_name = stringArr[1];
+    if (user_name) user_name = user_name.replace('@', '');
     const employee = await this.employees.findOne({
       where: {
-        tele_id: userId,
+        tele_user_name: user_name,
       },
       relations: {
         subjects: true,
@@ -144,7 +149,10 @@ export class TeleService {
         });
         employee.subjects = subjectList;
         const result = await this.employees.save(employee);
-        this.bot.telegram.sendMessage(group_id, `Đã gán quyền cho ${userId}`);
+        this.bot.telegram.sendMessage(
+          group_id,
+          `Đã gán quyền cho ${user_name}`,
+        );
         return result;
       case '/delete_role':
         if (employee == null) {
@@ -156,7 +164,10 @@ export class TeleService {
         }
         employee.subjects = [];
         const result1 = await this.employees.save(employee);
-        this.bot.telegram.sendMessage(group_id, `Đã xóa quyền của ${userId}`);
+        this.bot.telegram.sendMessage(
+          group_id,
+          `Đã xóa quyền của ${user_name}`,
+        );
         return result1;
       case '/help':
         // employee.subjects = [];
@@ -180,7 +191,10 @@ export class TeleService {
         return true;
       // return result1;
       default:
-        this.bot.telegram.sendMessage(group_id, `Lệnh không tồn tại!`);
+        if (command.startsWith('/')) {
+          this.bot.telegram.sendMessage(group_id, `Lệnh không tồn tại!`);
+        }
+        return false;
     }
   }
 
@@ -189,20 +203,21 @@ export class TeleService {
     if (body.message.new_chat_member) {
       employee = await this.employees.findOne({
         where: {
-          tele_id: body.message.new_chat_member.username,
+          tele_id: body.message.new_chat_member.id,
         },
       });
       if (employee == null) {
+        const teleUser = await this.bot.telegram.getChat(
+          body.message.new_chat_member.id,
+        );
         employee = {
           id: 0,
           fb_id: '',
-          name:
-            body.message.new_chat_member.first_name +
-            ' ' +
-            body.message.new_chat_member.last_name,
+          name: teleUser['first_name'] + ' ' + teleUser['last_name'],
           phone_number: '',
           subjects: [],
-          tele_id: body.message.new_chat_member.username,
+          tele_id: teleUser.id,
+          tele_user_name: teleUser['username'] ?? teleUser['first_name'],
         };
         return await this.employees.save(employee);
       }
