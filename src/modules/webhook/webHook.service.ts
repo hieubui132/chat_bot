@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, catchError } from 'rxjs';
 import { AxiosError } from 'axios';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class WebHookService {
@@ -86,17 +85,16 @@ export class WebHookService {
     };
 
     // Send the HTTP request to the Messenger Platform
-    const { data } = await firstValueFrom(
+    await firstValueFrom(
       this.httpService
         .post(url, requestBody, {
           params: { access_token: PAGE_ACCESS_TOKEN },
         })
         .pipe(
           catchError((error: AxiosError) => {
-            throw 'An error happened!';
+            throw error;
           }),
         ),
     );
-    return data;
   }
 }
