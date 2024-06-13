@@ -14,5 +14,6 @@ import { employee, subject } from 'src/entity';
   ],
   controllers: [TeleController],
   providers: [TeleService],
+  exports: [TeleService],
 })
 export class TeleModule {}

@@ -6,5 +6,6 @@ export default () => ({
   tele_admin_username: '',
   page_id: process.env.PAGE_ID,
   page_access_token:
-    'EAAN7jP8sNV8BO78HuccUuJ9w7Pxb5ETgZCzOKQfWtJ8KiVHIYNQ0NfPBomGP8zbrhkCYUODZCx4N06c8Xsdtv4ly2WlmafNEqPYj53VZADiiFtszRhwD3I9ASyqvIhQSux6sdNrnNZAkZBH5e3zZA8Qsta2rjOQzZAWmHQs2MqCJiFZB1c7dktZAG3fBC4whfoASk4QZDZD',
+    'EAAN7jP8sNV8BO0vGuAbwZCZCqHWGNeHBqzjLKSWVAZCjkvHYbw4Kz5DmnBh6odhK9h4mFDzcZAOovgOfADNfz1q7Prad5LiEQ2ZAopr1Esf2bIwBmEbIeWo4nScnfCIMKRrCKdXdAxghZCDdR7M38nKSMOKHTMUZB7ZC1yr5lZB7NTxXHD8ktEpt67sox9NdiyCOeDgZDZD',
+  verify_token: 'KMOBwGPzSM',
 });

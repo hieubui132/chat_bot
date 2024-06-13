@@ -103,10 +103,17 @@ export class TeleService {
   }
 
   async callBackMsg(body: any) {
-    if (body.message.text) {
-      return await this.command(body);
-    } else if (body.message.left_chat_member || body.message.new_chat_member) {
-      return await this.addOrRemoveMember(body);
+    try {
+      if (body.message.text) {
+        return await this.command(body);
+      } else if (
+        body.message.left_chat_member ||
+        body.message.new_chat_member
+      ) {
+        return await this.addOrRemoveMember(body);
+      }
+    } catch (ex) {
+      console.log(ex);
     }
   }
   async command(body: any) {

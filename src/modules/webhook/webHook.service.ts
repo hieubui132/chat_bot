@@ -2,68 +2,32 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { catchError, firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
+import { InjectRepository } from '@nestjs/typeorm';
+import { subject } from 'src/entity';
+import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { TeleService } from '../tele/tele.service';
 
 @Injectable()
 export class WebHookService {
-  constructor(private readonly httpService: HttpService) {}
-
-  // Handles messages events
-  handleMessage(senderPsid: any, receivedMessage: any) {
-    let response: any;
-    // Checks if the message contains text
-
-    if (receivedMessage.text) {
-      // Create the payload for a basic text message, which
-      // will be added to the body of your request to the Send API
-      response = {
-        text: `You sent the message: '${receivedMessage.text}'. Now send me an attachment!`,
-      };
-    } else if (receivedMessage.attachments) {
-      // Get the URL of the message attachment
-      let attachmentUrl = receivedMessage.attachments[0].payload.url;
-      response = {
-        attachment: {
-          type: 'template',
-          payload: {
-            template_type: 'generic',
-            elements: [
-              {
-                title: 'Is this the right picture?',
-                subtitle: 'Tap a button to answer.',
-                image_url: attachmentUrl,
-                buttons: [
-                  {
-                    type: 'postback',
-                    title: 'Yes!',
-                    payload: 'yes',
-                  },
-                  {
-                    type: 'postback',
-                    title: 'No!',
-                    payload: 'no',
-                  },
-                ],
-              },
-            ],
-          },
-        },
-      };
-    }
-
-    // Send the response message
-    // this.callSendAPI(senderPsid, response);
-  }
+  constructor(
+    private readonly httpService: HttpService,
+    @InjectRepository(subject)
+    private subjects: Repository<subject>,
+    private configService: ConfigService,
+    private teleService: TeleService,
+  ) {}
 
   // Handles messaging_postbacks events
   async handlePostback(senderPsid: any, receivedPostback: any) {
     let response: any;
 
     // Get the payload for the postback
-    let payload = receivedPostback.payload;
+    const payload = receivedPostback.payload;
 
     // Set the response based on the postback payload
     if (payload === 'STARTED') {
-      let username = await this.getNameUser(senderPsid);
+      const username = await this.getNameUser(senderPsid);
       response = {
         text: `Chào ${username.name}. Bạn cần sử dụng dịch vụ nào của chúng tôi?`,
       };
@@ -71,19 +35,25 @@ export class WebHookService {
       // Send the message to acknowledge the postback
       await this.callSendAPI(senderPsid, response);
       await this.sendMenuService(senderPsid);
-    } else if (payload === '1') {
+    } else if (payload === '-1') {
       await this.sendSubjectList(senderPsid);
+    } else if (!isNaN(payload) && payload > 0) {
+      await this.teleService.pushTele({
+        subject_id: payload,
+      });
     }
   }
 
   // Sends response messages via the Send API
   async callSendAPI(senderPsid: any, response: any) {
     // The page access token we have generated in your app settings
-    const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+    // const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+    const PAGE_ACCESS_TOKEN =
+      this.configService.get<string>('page_access_token');
     const url = 'https://graph.facebook.com/v20.0/me/messages';
 
     // Construct the message body
-    let requestBody = {
+    const requestBody = {
       recipient: {
         id: senderPsid,
       },
@@ -92,7 +62,7 @@ export class WebHookService {
 
     // Send the HTTP request to the Messenger Platform
     try {
-      const response = await firstValueFrom(
+      await firstValueFrom(
         this.httpService.post(url, requestBody, {
           params: { access_token: PAGE_ACCESS_TOKEN },
         }),
@@ -104,7 +74,8 @@ export class WebHookService {
   }
 
   async getNameUser(senderPsid: any) {
-    const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+    const PAGE_ACCESS_TOKEN =
+      this.configService.get<string>('page_access_token');
     const url = `https://graph.facebook.com/${senderPsid}?fields=name&access_token=${PAGE_ACCESS_TOKEN}`;
     // Send the HTTP request to the Messenger Platform
     const { data } = await firstValueFrom(
@@ -134,7 +105,7 @@ export class WebHookService {
                 {
                   type: 'postback',
                   title: 'Hỗ trợ học tập',
-                  payload: '1',
+                  payload: '-1',
                 },
               ],
             },
@@ -147,7 +118,7 @@ export class WebHookService {
                 {
                   type: 'postback',
                   title: 'Chat với admin',
-                  payload: '2',
+                  payload: '-2',
                 },
               ],
             },
@@ -160,7 +131,7 @@ export class WebHookService {
                 {
                   type: 'postback',
                   title: 'Tiếng Anh',
-                  payload: '3',
+                  payload: '-3',
                 },
               ],
             },
@@ -173,7 +144,7 @@ export class WebHookService {
                 {
                   type: 'postback',
                   title: 'Thực tập',
-                  payload: '4',
+                  payload: '-4',
                 },
               ],
             },
@@ -186,7 +157,7 @@ export class WebHookService {
                 {
                   type: 'postback',
                   title: 'Vay tiền nhanh',
-                  payload: '5',
+                  payload: '-5',
                 },
               ],
             },
@@ -198,33 +169,10 @@ export class WebHookService {
   }
 
   async sendSubjectList(senderPsid: any) {
-    const subjects = [
-      { id: 1, ten: 'Toán học' },
-      { id: 2, ten: 'Vật lý' },
-      { id: 3, ten: 'Hóa học' },
-      { id: 4, ten: 'Sinh học' },
-      { id: 5, ten: 'Ngữ văn' },
-      { id: 6, ten: 'Lịch sử' },
-      { id: 7, ten: 'Địa lý' },
-      { id: 8, ten: 'Tiếng Anh' },
-      { id: 9, ten: 'Giáo dục công dân' },
-      { id: 10, ten: 'Công nghệ' },
-      { id: 11, ten: 'Tin học' },
-      { id: 12, ten: 'Giáo dục thể chất' },
-      { id: 13, ten: 'Nghệ thuật' },
-      { id: 14, ten: 'Âm nhạc' },
-      { id: 15, ten: 'Kỹ năng sống' },
-      { id: 16, ten: 'Tiếng Pháp' },
-      { id: 17, ten: 'Tiếng Đức' },
-      { id: 18, ten: 'Tiếng Nhật' },
-      { id: 19, ten: 'Tiếng Hàn' },
-      { id: 20, ten: 'Tiếng Trung' },
-    ];
-
-    let elements = [];
-
+    const subjects = await this.subjects.find();
+    const elements = [];
     for (let i = 0; i < subjects.length; i += 3) {
-      let item = {
+      const item = {
         title: 'Chọn môn học',
         subtitle: '',
         image_url: '',
@@ -234,7 +182,7 @@ export class WebHookService {
       for (let j = i; j < i + 3 && j < subjects.length; j++) {
         item.buttons.push({
           type: 'postback',
-          title: subjects[j].ten,
+          title: subjects[j].name,
           payload: subjects[j].id,
         });
       }
