@@ -1,5 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, catchError } from 'rxjs';
 import { AxiosError } from 'axios';
@@ -7,11 +6,8 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class WebHookService {
-  constructor(
-    private readonly httpService: HttpService,
-    private configService: ConfigService,
-  ) {}
-  // private readonly logger = new Logger(WebHookService.name);
+  constructor(private readonly httpService: HttpService) {}
+
   // Handles messages events
   handleMessage(senderPsid: any, receivedMessage: any) {
     let response: any;
@@ -97,7 +93,6 @@ export class WebHookService {
         })
         .pipe(
           catchError((error: AxiosError) => {
-            // this.logger.error(error.response.data);
             throw 'An error happened!';
           }),
         ),
