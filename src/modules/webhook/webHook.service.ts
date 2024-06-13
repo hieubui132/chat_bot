@@ -3,10 +3,14 @@ import { Request, Response } from 'express';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, catchError } from 'rxjs';
 import { AxiosError } from 'axios';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class WebHookService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private configService: ConfigService,
+  ) {}
   private readonly logger = new Logger(WebHookService.name);
   // Handles messages events
   handleMessage(senderPsid: any, receivedMessage: any) {
@@ -75,7 +79,8 @@ export class WebHookService {
   // Sends response messages via the Send API
   async callSendAPI(senderPsid: any, response: any) {
     // The page access token we have generated in your app settings
-    const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
+    const PAGE_ACCESS_TOKEN =
+      this.configService.get<string>('page_access_token');
     const url = 'https://graph.facebook.com/v20.0/me/messages';
     // Construct the message body
     let requestBody = {
