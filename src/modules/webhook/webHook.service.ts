@@ -11,7 +11,7 @@ export class WebHookService {
     private readonly httpService: HttpService,
     private configService: ConfigService,
   ) {}
-  private readonly logger = new Logger(WebHookService.name);
+  // private readonly logger = new Logger(WebHookService.name);
   // Handles messages events
   handleMessage(senderPsid: any, receivedMessage: any) {
     let response: any;
@@ -98,10 +98,11 @@ export class WebHookService {
         })
         .pipe(
           catchError((error: AxiosError) => {
-            this.logger.error(error.response.data);
+            // this.logger.error(error.response.data);
             throw 'An error happened!';
           }),
         ),
     );
+    return data;
   }
 }
