@@ -10,7 +10,7 @@ export class WebHookController {
   @Get()
   getWebhook(@Req() req: Request, @Res() res: Response) {
     // Your verify token. Should be a random string.
-    const VERIFY_TOKEN = 'KMOBwGPzSM';
+    const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
     // Parse the query params
     let mode = req.query['hub.mode'];
