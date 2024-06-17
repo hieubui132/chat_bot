@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { catchError, firstValueFrom } from 'rxjs';
-import { AxiosError } from 'axios';
+import { firstValueFrom } from 'rxjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { subject } from 'src/entity';
 import { Repository } from 'typeorm';
@@ -10,6 +9,7 @@ import { TeleService } from '../tele/tele.service';
 
 @Injectable()
 export class WebHookService {
+  private readonly logger = new Logger(WebHookService.name);
   constructor(
     private readonly httpService: HttpService,
     @InjectRepository(subject)
@@ -65,31 +65,36 @@ export class WebHookService {
 
     // Send the HTTP request to the Messenger Platform
     try {
-      await firstValueFrom(
+      const { data } = await firstValueFrom(
         this.httpService.post(url, requestBody, {
           params: { access_token: PAGE_ACCESS_TOKEN },
         }),
       );
-      console.log('Message sent!');
+      console.log('Message sent!', data);
     } catch (error) {
-      console.error('Unable to send message');
+      const errorMessage = error.response?.data || error.message;
+      this.logger.error(errorMessage);
     }
   }
 
   async getNameUser(senderPsid: any) {
+    let result: any;
+
     const PAGE_ACCESS_TOKEN =
       this.configService.get<string>('page_access_token');
     const url = `https://graph.facebook.com/${senderPsid}?fields=name&access_token=${PAGE_ACCESS_TOKEN}`;
+
     // Send the HTTP request to the Messenger Platform
-    const { data } = await firstValueFrom(
-      this.httpService.get(url).pipe(
-        catchError((error: AxiosError) => {
-          console.error(error);
-          throw 'An error happened!';
-        }),
-      ),
-    );
-    return data;
+    try {
+      const { data } = await firstValueFrom(this.httpService.get(url));
+      result = data;
+    } catch (error) {
+      result = '';
+      const errorMessage = error.response?.data || error.message;
+      this.logger.error(errorMessage);
+    }
+
+    return result;
   }
 
   async sendMenuService(senderPsid: any) {
