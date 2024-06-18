@@ -26,12 +26,11 @@ export class WebHookService {
     const payload = receivedPostback.payload;
 
     // Set the response based on the postback payload
-    if (payload === 'STARTED') {
+    if (payload === 'Get started') {
       const username = await this.getNameUser(senderPsid);
       response = {
         text: `Chào ${username.name}. Bạn cần sử dụng dịch vụ nào của chúng tôi?`,
       };
-
       // Send the message to acknowledge the postback
       await this.callSendAPI(senderPsid, response);
       await this.sendMenuService(senderPsid);
