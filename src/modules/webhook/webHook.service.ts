@@ -18,6 +18,30 @@ export class WebHookService {
     private teleService: TeleService,
   ) {}
 
+  // Handles messages events
+  async handleMessage(senderPsid: any, receivedMessage: any) {
+    let response: any;
+
+    // Checks if the message contains text
+    if (receivedMessage.text) {
+      // Create the payload for a basic text message, which
+      // will be added to the body of your request to the Send API
+      if (receivedMessage.text === 'Get started') {
+        const username = await this.getNameUser(senderPsid);
+        response = {
+          text: `Chào ${username.name}. Bạn cần sử dụng dịch vụ nào của chúng tôi?`,
+        };
+        // Send the message to acknowledge the postback
+        await this.callSendAPI(senderPsid, response);
+        await this.sendMenuService(senderPsid);
+      }
+    } else if (receivedMessage.attachments) {
+    }
+
+    // Send the response message
+    this.callSendAPI(senderPsid, response);
+  }
+
   // Handles messaging_postbacks events
   async handlePostback(senderPsid: any, receivedPostback: any) {
     let response: any;
