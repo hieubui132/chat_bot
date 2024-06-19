@@ -22,22 +22,41 @@ export class TeleService {
   ) {
     const token = this.configService.get<string>('tele_token');
     this.bot = new Telegraf(token);
-    this.bot.on(message('text'), (ctx) => ctx.reply('Hello'));
+    this.bot.on(message('text'), async (ctx: any) => {
+      try {
+        await this.command(ctx.update.message.text);
+      } catch (ex) {
+        console.log(ex);
+      }
+    });
     // this.bot.telegram.sendMessage('-4249901175', 'xvvv');
     // this.bot.on();
+    this.bot.on('chat_member', async (ctx: any) => {
+      try {
+        await this.addOrRemoveMember({
+          id: ctx.update.chat_member.new_chat_member.user.id,
+          status: ctx.update.chat_member.new_chat_member.status,
+          username: 'xx',
+        });
+      } catch (ex) {
+        console.log(ex);
+      }
+    });
+
     this.bot.launch({
-      webhook: {
-        // Public domain for webhook; e.g.: example.com
-        domain: this.configService.get<string>('tele_webhook_domain'),
-        // Port to listen on; e.g.: 8080
-        // port: port,
-        // Optional path to listen for.
-        // `bot.secretPathComponent()` will be used by default
-        path: this.configService.get<string>('tele_webhook_path'),
-        // Optional secret to be sent back in a header for security.
-        // e.g.: `crypto.randomBytes(64).toString("hex")`
-        // secretToken: randomAlphaNumericString,
-      },
+      // webhook: {
+      //   // Public domain for webhook; e.g.: example.com
+      //   domain: this.configService.get<string>('tele_webhook_domain'),
+      //   // Port to listen on; e.g.: 8080
+      //   // port: port,
+      //   // Optional path to listen for.
+      //   // `bot.secretPathComponent()` will be used by default
+      //   path: this.configService.get<string>('tele_webhook_path'),
+      //   // Optional secret to be sent back in a header for security.
+      //   // e.g.: `crypto.randomBytes(64).toString("hex")`
+      //   // secretToken: randomAlphaNumericString,
+      // },
+      allowedUpdates: ['chat_member', 'message'],
     });
   }
 
@@ -105,7 +124,7 @@ export class TeleService {
   async callBackMsg(body: any) {
     try {
       if (body.message.text) {
-        return await this.command(body);
+        // return await this.command(body);
       } else if (
         body.message.left_chat_member ||
         body.message.new_chat_member
@@ -116,9 +135,9 @@ export class TeleService {
       console.log(ex);
     }
   }
-  async command(body: any) {
+  async command(mes: string) {
     const group_id = this.configService.get<string>('tele_group_id');
-    const mes = body.message.text;
+    // const mes = body.message.text;
     const stringArr = mes.split(' ');
     // if (stringArr[1] == undefined || stringArr[2] == undefined) {
     //   this.bot.telegram.sendMessage(
@@ -207,16 +226,14 @@ export class TeleService {
 
   async addOrRemoveMember(body: any) {
     let employee = null;
-    if (body.message.new_chat_member) {
+    if (body.status == 'member') {
       employee = await this.employees.findOne({
         where: {
-          tele_id: body.message.new_chat_member.id,
+          tele_id: body.id,
         },
       });
       if (employee == null) {
-        const teleUser = await this.bot.telegram.getChat(
-          body.message.new_chat_member.id,
-        );
+        const teleUser = await this.bot.telegram.getChat(body.id);
         employee = {
           id: 0,
           fb_id: '',
@@ -228,10 +245,10 @@ export class TeleService {
         };
         return await this.employees.save(employee);
       }
-    } else if (body.message.left_chat_member) {
+    } else if (body.status == 'left') {
       employee = await this.employees.findOne({
         where: {
-          tele_id: body.message.left_chat_member.username,
+          tele_id: body.id,
         },
       });
       if (employee) {
