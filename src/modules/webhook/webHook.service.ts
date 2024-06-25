@@ -61,12 +61,12 @@ export class WebHookService {
     } else if (payload === '-1') {
       await this.sendSubjectList(senderPsid);
     } else if (!isNaN(payload) && payload > 0) {
-      this.teleService.pushTele({
-        subject_id: payload,
-      });
-      this.callSendAPI(senderPsid, {
-        text: `Chúng tôi đã ghi nhận yêu cầu của bạn. Vui lòng chờ 1 chút để chúng tôi yêu cầu nhân viên tư vấn cho bạn nhé?`,
-      });
+      // this.teleService.pushTele({
+      //   subject_id: payload,
+      // });
+      // this.callSendAPI(senderPsid, {
+      //   text: `Chúng tôi đã ghi nhận yêu cầu của bạn. Vui lòng chờ 1 chút để chúng tôi yêu cầu nhân viên tư vấn cho bạn nhé?`,
+      // });
     }
   }
 

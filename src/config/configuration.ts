@@ -6,4 +6,5 @@ export default () => ({
   page_id: process.env.PAGE_ID,
   page_access_token: process.env.PAGE_ACCESS_TOKEN,
   verify_token: process.env.VERIFY_TOKEN,
+  private_key: process.env.PRIVATE_KEY,
 });

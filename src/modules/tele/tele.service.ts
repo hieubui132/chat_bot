@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { post_group, set_webhook } from 'src/model';
+import { post_group, response, set_webhook } from 'src/model';
 import { ConfigService } from '@nestjs/config';
 import { tele_url } from 'src/api/url';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -68,18 +68,34 @@ export class TeleService {
     return res.status == 200;
   }
 
-  async pushTele(mes: post_group) {
-    const entity = await this.subjects.findOne({
-      where: {
-        id: mes.subject_id,
-      },
-      relations: {
-        employees: true,
-      },
-    });
+  async pushTele(body: post_group) {
+    let response: response = {
+      status: false,
+      message: '',
+    };
+    if (body.key != this.configService.get<string>('private_key')) {
+      response = {
+        status: false,
+        message: 'Sai key',
+      };
+      return response;
+    }
+
+    const entity = await this.subjects
+      .createQueryBuilder('subjects')
+      .leftJoinAndSelect('subjects.employees', 'employees')
+      .where('UPPER(subjects.name) = UPPER(:subjectName)', {
+        subjectName: body.subject_name,
+      })
+      .getOne();
+    console.log(entity);
 
     if (entity == null) {
-      return false;
+      response = {
+        status: false,
+        message: 'Không tồn tại môn này',
+      };
+      return response;
     }
 
     const tag: string[] = [];
@@ -91,19 +107,20 @@ export class TeleService {
     if (tag.length > 0) {
       mesString = tag.join(' ');
       mesString += ` Có người cần hỗ trợ môn ${entity.name}, các bạn vui lòng vào page check tin nhắn nhé!`;
-      const res = await this.bot.telegram.sendMessage(group, mesString, {
+      await this.bot.telegram.sendMessage(group, mesString, {
         parse_mode: 'HTML',
       });
-      return res;
     } else {
       mesString = `Có người cần hỗ trợ môn ${entity.name}, ai làm được thì triển nhé!`;
-      const res = await this.bot.telegram.sendMessage(group, mesString, {
+      await this.bot.telegram.sendMessage(group, mesString, {
         parse_mode: 'HTML',
       });
-      return res;
     }
-
-    return false;
+    response = {
+      status: true,
+      message: 'Thành công',
+    };
+    return response;
   }
   async setWebhook(body: set_webhook) {
     const token = this.configService.get<string>('tele_token');
