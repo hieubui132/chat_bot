@@ -24,6 +24,12 @@ export class TeleService {
     this.bot = new Telegraf(token);
     this.bot.on(message('text'), async (ctx: any) => {
       try {
+        console.log(ctx.update.message.chat.id, ctx.update.message.from.id);
+        const user = await this.bot.telegram.getChatMember(
+          ctx.update.message.chat.id,
+          ctx.update.message.from.id,
+        );
+        if (user.status == 'administrator' || user.status == 'creator') return;
         await this.command(ctx.update.message.text);
       } catch (ex) {
         console.log(ex);
@@ -68,7 +74,24 @@ export class TeleService {
     return res.status == 200;
   }
 
+  makeString(text: string) {
+    const dot = text.indexOf('.');
+
+    // Nếu không tìm thấy dấu chấm, trả về chuỗi ban đầu
+    if (dot === -1) {
+      return text;
+    }
+
+    let phanSau = text.substring(dot + 1);
+
+    // Xóa các khoảng trắng ở đầu và cuối chuỗi
+    phanSau = phanSau.trim();
+
+    return phanSau;
+  }
+
   async pushTele(body: post_group) {
+    const subject_name = this.makeString(body.subject_name);
     let response: response = {
       status: false,
       message: '',
@@ -85,7 +108,7 @@ export class TeleService {
       .createQueryBuilder('subjects')
       .leftJoinAndSelect('subjects.employees', 'employees')
       .where('UPPER(subjects.name) = UPPER(:subjectName)', {
-        subjectName: body.subject_name,
+        subjectName: subject_name,
       })
       .getOne();
     console.log(entity);
@@ -154,15 +177,7 @@ export class TeleService {
   }
   async command(mes: string) {
     const group_id = this.configService.get<string>('tele_group_id');
-    // const mes = body.message.text;
     const stringArr = mes.split(' ');
-    // if (stringArr[1] == undefined || stringArr[2] == undefined) {
-    //   this.bot.telegram.sendMessage(
-    //     group_id,
-    //     'Lệnh sai! vui lòng nhập lại lệnh',
-    //   );
-    //   return false;
-    // }
     const command = stringArr[0];
     let user_name = stringArr[1];
     if (user_name) user_name = user_name.replace('@', '');
@@ -174,7 +189,6 @@ export class TeleService {
         subjects: true,
       },
     });
-
     switch (command) {
       case '/set_role':
         if (employee == null) {
@@ -212,15 +226,43 @@ export class TeleService {
           `Đã xóa quyền của ${user_name}`,
         );
         return result1;
+
+      case '/show_user':
+        console.log(user_name);
+        const list = await this.employees.find({
+          where: {
+            tele_user_name: user_name,
+          },
+          relations: {
+            subjects: true,
+          },
+        });
+        if (list.length == 0) {
+          this.bot.telegram.sendMessage(group_id, `Chưa có dữ liệu`);
+          return;
+        }
+        const users: string[] = [];
+        for (const item of list) {
+          const subjectStr: string[] = [];
+          for (const s of item.subjects) {
+            subjectStr.push(s.name);
+          }
+          users.push('- ' + item.name + ': ' + subjectStr.join(', '));
+        }
+
+        this.bot.telegram.sendMessage(
+          group_id,
+          'Danh sách người dùng: \n' + users.join('\n'),
+        );
+        return;
       case '/help':
-        // employee.subjects = [];
-        // const result1 = await this.employees.save(employee);
         this.bot.telegram.sendMessage(
           group_id,
           `Các lệnh hỗ trợ:\n
-          Gán môn phụ trách cho người dùng: set_role <Tag người dùng> <ID môn phụ trách>\n 
-          Xóa môn phụ trách của người dùng: delete_role <Tag người dùng>\n
-          Xem Danh sách các môn: subject
+          - Gán môn phụ trách cho người dùng: /set_role Tag người dùng <ID môn phụ trách>\n 
+          - Xóa môn phụ trách của người dùng: /delete_role <Tag người dùng>\n
+          - Xem Danh sách các môn: /subject\n
+          - Xem Danh sách user: /show_user
           `,
         );
         return true;
@@ -235,7 +277,10 @@ export class TeleService {
       // return result1;
       default:
         if (command.startsWith('/')) {
-          this.bot.telegram.sendMessage(group_id, `Lệnh không tồn tại!`);
+          this.bot.telegram.sendMessage(
+            group_id,
+            `Lệnh không tồn tại! Bạn vui lòng kiểm tra đúng cú pháp. Chat /help để nhận được hỗ trợ`,
+          );
         }
         return false;
     }

@@ -34,4 +34,10 @@ export class TeleController {
     const result = await this.service.callBackMsg(req.body);
     res.status(200).send(result);
   }
+
+  @Post('test')
+  public async test(@Body() body: set_webhook) {
+    const res = await this.service.command(body.domain);
+    return res;
+  }
 }

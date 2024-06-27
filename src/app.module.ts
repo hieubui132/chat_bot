@@ -9,6 +9,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { JobModule } from './modules/job/job.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { conversation, employee, subject } from './entity';
+import { SubjectModule } from './modules/subject/subject.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { conversation, employee, subject } from './entity';
     }),
     WebHookModule,
     TeleModule,
+    SubjectModule,
     ScheduleModule.forRoot(),
     JobModule,
     TypeOrmModule.forRoot({
