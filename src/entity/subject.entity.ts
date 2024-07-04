@@ -15,6 +15,9 @@ export class subject {
   @Column('varchar', { length: 500, name: 'name' })
   name: string = '';
 
+  @Column('varchar', { length: 500, name: 'metadata_id', nullable: true })
+  metadata_id: string | null = '';
+
   @ManyToMany(() => employee, (employee) => employee.subjects)
   @JoinTable({
     name: 'employee_subject',

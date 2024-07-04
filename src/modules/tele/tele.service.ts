@@ -25,12 +25,15 @@ export class TeleService {
     this.bot.on(message('text'), async (ctx: any) => {
       try {
         console.log(ctx.update.message.chat.id, ctx.update.message.from.id);
+        let isAdmin = false;
         const user = await this.bot.telegram.getChatMember(
           ctx.update.message.chat.id,
           ctx.update.message.from.id,
         );
-        if (user.status == 'administrator' || user.status == 'creator') return;
-        await this.command(ctx.update.message.text);
+        if (user.status == 'administrator' || user.status == 'creator') {
+          isAdmin = true;
+        }
+        await this.command(ctx.update.message.text, isAdmin);
       } catch (ex) {
         console.log(ex);
       }
@@ -91,7 +94,7 @@ export class TeleService {
   }
 
   async pushTele(body: post_group) {
-    const subject_name = this.makeString(body.subject_name);
+    // const subject_name = this.makeString(body.subject_name);
     let response: response = {
       status: false,
       message: '',
@@ -104,14 +107,22 @@ export class TeleService {
       return response;
     }
 
-    const entity = await this.subjects
-      .createQueryBuilder('subjects')
-      .leftJoinAndSelect('subjects.employees', 'employees')
-      .where('UPPER(subjects.name) = UPPER(:subjectName)', {
-        subjectName: subject_name,
-      })
-      .getOne();
-    console.log(entity);
+    // const entity = await this.subjects
+    //   .createQueryBuilder('subjects')
+    //   .leftJoinAndSelect('subjects.employees', 'employees')
+    //   .where('UPPER(subjects.name) = UPPER(:subjectName)', {
+    //     subjectName: subject_name,
+    //   })
+    //   .getOne();
+
+    const entity = await this.subjects.findOne({
+      where: {
+        id: body.subject_id,
+      },
+      relations: {
+        employees: true,
+      },
+    });
 
     if (entity == null) {
       response = {
@@ -121,6 +132,7 @@ export class TeleService {
       return response;
     }
 
+    console.log(entity);
     const tag: string[] = [];
     for (const e of entity.employees) {
       tag.push(`<a href='tg://user?id=${e.tele_id}'>${e.tele_user_name}</a>`);
@@ -175,7 +187,7 @@ export class TeleService {
       console.log(ex);
     }
   }
-  async command(mes: string) {
+  async command(mes: string, isAdmin: boolean) {
     const group_id = this.configService.get<string>('tele_group_id');
     const stringArr = mes.split(' ');
     const command = stringArr[0];
@@ -191,6 +203,7 @@ export class TeleService {
     });
     switch (command) {
       case '/set_role':
+        if (!isAdmin) return;
         if (employee == null) {
           this.bot.telegram.sendMessage(
             group_id,
@@ -201,7 +214,7 @@ export class TeleService {
         const subject = stringArr[2].split(',');
         const subjectList = await this.subjects.find({
           where: {
-            id: In(subject),
+            metadata_id: In(subject),
           },
         });
         employee.subjects = subjectList;
@@ -212,6 +225,7 @@ export class TeleService {
         );
         return result;
       case '/delete_role':
+        if (!isAdmin) return;
         if (employee == null) {
           this.bot.telegram.sendMessage(
             group_id,
@@ -226,9 +240,7 @@ export class TeleService {
           `Đã xóa quyền của ${user_name}`,
         );
         return result1;
-
       case '/show_user':
-        console.log(user_name);
         const list = await this.employees.find({
           where: {
             tele_user_name: user_name,
@@ -256,21 +268,34 @@ export class TeleService {
         );
         return;
       case '/help':
-        this.bot.telegram.sendMessage(
-          group_id,
-          `Các lệnh hỗ trợ:\n
-          - Gán môn phụ trách cho người dùng: /set_role Tag người dùng <ID môn phụ trách>\n 
-          - Xóa môn phụ trách của người dùng: /delete_role <Tag người dùng>\n
-          - Xem Danh sách các môn: /subject\n
-          - Xem Danh sách user: /show_user
-          `,
-        );
+        if (isAdmin) {
+          this.bot.telegram.sendMessage(
+            group_id,
+            `Các lệnh hỗ trợ dành cho bạn:\n
+            - Gán môn phụ trách cho người dùng: /set_role <Tag người dùng> <ID môn phụ trách>\n 
+            - Xóa môn phụ trách của người dùng: /delete_role <Tag người dùng>\n
+            - Xem Danh sách các môn: /subject\n
+            - Xem Danh sách user: /show_user
+            `,
+          );
+        } else {
+          this.bot.telegram.sendMessage(
+            group_id,
+            `Các lệnh hỗ trợ:\n
+            - Xem Danh sách các môn: /subject\n
+            - Xem Danh sách user: /show_user
+            `,
+          );
+        }
+
         return true;
       case '/subject':
-        const monhocs = await this.subjects.find();
-        const array: string[] = [`ID      Tên môn học`];
+        const monhocs = await this.subjects.find({
+          order: { metadata_id: 'ASC' },
+        });
+        const array: string[] = [`Mã      Tên môn học`];
         monhocs.map((x) => {
-          array.push(`${x.id}      ${x.name}`);
+          array.push(`${x.metadata_id}      ${x.name}`);
         });
         this.bot.telegram.sendMessage(group_id, array.join('\n'));
         return true;

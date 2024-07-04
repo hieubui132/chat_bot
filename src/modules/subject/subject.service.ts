@@ -10,7 +10,7 @@ export class SubjectService {
 
   async list() {
     try {
-      return await this.subjects.find();
+      return await this.subjects.find({ order: { id: 'ASC' } });
     } catch (ex) {
       console.log(ex);
       return [];
