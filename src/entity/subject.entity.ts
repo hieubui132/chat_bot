@@ -16,7 +16,7 @@ export class subject {
   name: string = '';
 
   @Column('varchar', { length: 500, name: 'metadata_id', nullable: true })
-  metadata_id: string | null = '';
+  metadata_id: string = '';
 
   @ManyToMany(() => employee, (employee) => employee.subjects)
   @JoinTable({

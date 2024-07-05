@@ -117,7 +117,7 @@ export class TeleService {
 
     const entity = await this.subjects.findOne({
       where: {
-        id: body.subject_id,
+        metadata_id: body.subject_id,
       },
       relations: {
         employees: true,
@@ -141,12 +141,12 @@ export class TeleService {
     const group = this.configService.get<string>('tele_group_id');
     if (tag.length > 0) {
       mesString = tag.join(' ');
-      mesString += ` Có người cần hỗ trợ môn ${entity.name}, các bạn vui lòng vào page check tin nhắn nhé!`;
+      mesString += ` ${body.fb_name} cần hỗ trợ môn ${entity.name}, các bạn vui lòng vào page check tin nhắn nhé!`;
       await this.bot.telegram.sendMessage(group, mesString, {
         parse_mode: 'HTML',
       });
     } else {
-      mesString = `Có người cần hỗ trợ môn ${entity.name}, ai làm được thì triển nhé!`;
+      mesString = `${body.fb_name} cần hỗ trợ môn ${entity.name}, ai làm được thì triển nhé!`;
       await this.bot.telegram.sendMessage(group, mesString, {
         parse_mode: 'HTML',
       });
@@ -211,7 +211,17 @@ export class TeleService {
           );
           return true;
         }
-        const subject = stringArr[2].split(',');
+        let list_id = [];
+        stringArr.map((x, index) => {
+          if (index > 1) {
+            list_id.push(x);
+          }
+        });
+        let str_id = list_id.join('');
+        let subject = str_id.split(',');
+        subject = subject.map((x) => {
+          return x.trim();
+        });
         const subjectList = await this.subjects.find({
           where: {
             metadata_id: In(subject),
